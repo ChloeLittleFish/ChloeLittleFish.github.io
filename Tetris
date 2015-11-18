@@ -1,0 +1,559 @@
+<html> 
+<head> 
+<style> 
+#board tr td{ 
+width: 30px; 
+height: 30px; 
+} 
+</style> 
+</head> 
+<script> 
+
+var tbl; 
+var status = 0; 
+var timer; 
+var score = 0; 
+
+var board = new Array(18); 
+for(var i=0;i<18;i++){ 
+board[i] = new Array(10); 
+} 
+for(var i=0;i<18;i++){ 
+for(var j=0; j<10; j++){ 
+board[i][j] = 0; 
+} 
+} 
+
+var activeBlock;
+function generateBlock(){ 
+activeBlock = null; 
+activeBlock = new Array(4); 
+
+var t = (Math.floor(Math.random()*20)+1)%7; 
+switch(t){ 
+case 0:{ 
+activeBlock[0] = {x:0, y:4}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:0, y:5}; 
+activeBlock[3] = {x:1, y:5}; 
+break; 
+} 
+case 1:{ 
+activeBlock[0] = {x:0, y:3}; 
+activeBlock[1] = {x:0, y:4}; 
+activeBlock[2] = {x:0, y:5}; 
+activeBlock[3] = {x:0, y:6}; 
+break; 
+} 
+case 2:{ 
+activeBlock[0] = {x:0, y:5}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:1, y:5}; 
+activeBlock[3] = {x:2, y:4}; 
+break; 
+} 
+case 3:{ 
+activeBlock[0] = {x:0, y:4}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:1, y:5}; 
+activeBlock[3] = {x:2, y:5}; 
+break; 
+} 
+case 4:{ 
+activeBlock[0] = {x:0, y:4}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:1, y:5}; 
+activeBlock[3] = {x:1, y:6}; 
+break; 
+} 
+case 5:{ 
+activeBlock[0] = {x:0, y:4}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:2, y:4}; 
+activeBlock[3] = {x:2, y:5}; 
+break; 
+} 
+case 6:{ 
+activeBlock[0] = {x:0, y:5}; 
+activeBlock[1] = {x:1, y:4}; 
+activeBlock[2] = {x:1, y:5}; 
+activeBlock[3] = {x:1, y:6}; 
+break; 
+} 
+} 
+
+for(var i=0; i<4; i++){ 
+if(!isCellValid(activeBlock[i].x, activeBlock[i].y)){ 
+return false; 
+} 
+} 
+return true; 
+} 
+
+function moveDown(){ 
+if(checkBottomBorder()){ 
+erase(); 
+
+for(var i=0; i<4; i++){ 
+activeBlock[i].x = activeBlock[i].x + 1; 
+} 
+paint(); 
+} 
+
+else{ 
+clearInterval(timer);  
+updateBoard(); 
+
+var lines = deleteLine(); 
+if(lines!=0){  
+score = score + lines*10; 
+updateScore(); 
+eraseBoard(); 
+paintBoard(); 
+} 
+
+if(!generateBlock()){ 
+alert("Game over!"); 
+status = 2; 
+return; 
+} 
+paint(); 
+
+timer = setInterval(moveDown,1000) 
+} 
+} 
+
+function moveLeft(){ 
+if(checkLeftBorder()){ 
+erase(); 
+for(var i=0; i<4; i++){ 
+activeBlock[i].y = activeBlock[i].y - 1; 
+} 
+paint(); 
+} 
+} 
+
+function moveRight(){ 
+if(checkRightBorder()){ 
+erase(); 
+for(var i=0; i<4; i++){ 
+activeBlock[i].y = activeBlock[i].y + 1; 
+} 
+paint(); 
+} 
+} 
+
+function rotate(){ 
+var tmpBlock = new Array(4); 
+for(var i=0; i<4; i++){ 
+tmpBlock[i] = {x:0, y:0}; 
+} 
+for(var i=0; i<4; i++){ 
+tmpBlock[i].x = activeBlock[i].x; 
+tmpBlock[i].y = activeBlock[i].y; 
+} 
+
+var cx = Math.round((tmpBlock[0].x + tmpBlock[1].x + tmpBlock[2].x + tmpBlock[3].x)/4); 
+var cy = Math.round((tmpBlock[0].y + tmpBlock[1].y + tmpBlock[2].y + tmpBlock[3].y)/4); 
+
+for(var i=0; i<4; i++){ 
+tmpBlock[i].x = cx+cy-activeBlock[i].y; 
+tmpBlock[i].y = cy-cx+activeBlock[i].x; 
+} 
+ 
+for(var i=0; i<4; i++){ 
+if(!isCellValid(tmpBlock[i].x,tmpBlock[i].y)){ 
+return; 
+} 
+} 
+erase(); 
+
+for(var i=0; i<4; i++){ 
+activeBlock[i].x = tmpBlock[i].x; 
+activeBlock[i].y = tmpBlock[i].y; 
+} 
+paint(); 
+} 
+
+function checkLeftBorder(){ 
+for(var i=0; i<activeBlock.length; i++){ 
+if(activeBlock[i].y==0){ 
+return false; 
+} 
+if(!isCellValid(activeBlock[i].x, activeBlock[i].y-1)){ 
+return false; 
+} 
+} 
+return true; 
+} 
+ 
+function checkRightBorder(){ 
+for(var i=0; i<activeBlock.length; i++){ 
+if(activeBlock[i].y==9){ 
+return false; 
+} 
+if(!isCellValid(activeBlock[i].x, activeBlock[i].y+1)){ 
+return false; 
+} 
+} 
+return true; 
+} 
+
+function checkBottomBorder(){ 
+for(var i=0; i<activeBlock.length; i++){ 
+if(activeBlock[i].x==17){ 
+return false; 
+} 
+if(!isCellValid(activeBlock[i].x+1, activeBlock[i].y)){ 
+return false; 
+} 
+} 
+return true; 
+} 
+
+function isCellValid(x, y){ 
+if(x>17||x<0||y>9||y<0){ 
+return false; 
+} 
+if(board[x][y]==1){ 
+return false; 
+} 
+return true; 
+} 
+
+function erase(){ 
+for(var i=0; i<4; i++){ 
+tbl.rows[activeBlock[i].x].cells[activeBlock[i].y].style.backgroundColor="skyblue"; 
+} 
+} 
+
+function paint(){ 
+for(var i=0; i<4; i++){ 
+tbl.rows[activeBlock[i].x].cells[activeBlock[i].y].style.backgroundColor="gold"; 
+} 
+} 
+
+function updateBoard(){ 
+for(var i=0; i<4; i++){ 
+board[activeBlock[i].x][activeBlock[i].y]=1; 
+} 
+} 
+ 
+function deleteLine(){ 
+var lines = 0; 
+for(var i=0; i<18; i++){ 
+var j=0; 
+for(; j<10; j++){ 
+if(board[i][j]==0){ 
+break; 
+} 
+} 
+if(j==10){ 
+lines++; 
+if(i!=0){ 
+for(var k=i-1; k>=0; k--){ 
+board[k+1] = board[k]; 
+} 
+} 
+board[0] = generateBlankLine(); 
+} 
+} 
+return lines; 
+} 
+
+function eraseBoard(){ 
+for(var i=0; i<18; i++){ 
+for(var j=0; j<10; j++){ 
+tbl.rows[i].cells[j].style.backgroundColor = "skyblue"; 
+} 
+} 
+} 
+ 
+function paintBoard(){ 
+for(var i=0;i<18;i++){ 
+for(var j=0; j<10; j++){ 
+if(board[i][j]==1){ 
+tbl.rows[i].cells[j].style.backgroundColor = "gold"; 
+} 
+} 
+} 
+} 
+ 
+function generateBlankLine(){ 
+var line = new Array(10); 
+for(var i=0; i<10; i++){ 
+line[i] = 0; 
+} 
+return line; 
+} 
+
+function updateScore(){ 
+document.getElementById("score").innerText=" " + score; 
+} 
+ 
+function keyControl(){ 
+if(status!=1){ 
+return; 
+} 
+var code = event.keyCode; 
+switch(code){ 
+case 37:{ 
+moveLeft(); 
+break; 
+} 
+case 38:{ 
+rotate(); 
+break; 
+} 
+case 39:{ 
+moveRight(); 
+break; 
+} 
+case 40:{ 
+moveDown(); 
+break; 
+} 
+} 
+} 
+ 
+function begin(e){ 
+e.disabled = true; 
+status = 1; 
+tbl = document.getElementById("board"); 
+if(!generateBlock()){ 
+alert("Game over!"); 
+status = 2; 
+return; 
+} 
+paint(); 
+timer = setInterval(moveDown,1000); 
+} 
+document.onkeydown=keyControl; 
+</script> 
+
+<body> 
+<Input type="button" value="begin" onclick="begin(this);"/> 
+Score: <span id="score"> 0</span>
+
+ 
+<table id="board" cellspacing=0 cellpadding=0 border=2 style="border-collapse:collapse;"> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+<tr> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+<td></td> 
+</tr> 
+</table> 
+
+</body> 
+</html> 
